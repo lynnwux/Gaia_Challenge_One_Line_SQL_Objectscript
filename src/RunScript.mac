@@ -1,20 +1,6 @@
 ROUTINE RunScript
- #; We will run this routine to do the benchmark
-Run()
-{
- #; extract files if necessary from .data/in to .data/temp
-
- #; Start time
- Set startTime = $ZHOROLOG
-
- #; Insert the call to your method/rountine that
- #; - reads the csv files from ./data/in or .data/temp
- #; - processes data
- #; - creates output file in .data/out
-
- #; End time
- Set endTime = $ZHOROLOG
- #; Elapsed time in seconds
- Set elapsed = endTime - startTime
- Write "Elapsed time: ", elapsed, " seconds", !
-}
+ New t
+ Set t = $ZHOROLOG
+ Do $ZF(-1, "python3 /home/irisowner/dev/analyze_variability.py")
+ Write "Elapsed time: ", $ZHOROLOG - t, " seconds", !
+ Quit

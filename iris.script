@@ -1,4 +1,4 @@
-    ;do $System.OBJ.LoadDir("/home/irisowner/dev/src","ck",,1)
+    do $System.OBJ.LoadDir("/home/irisowner/dev/src","ck",,1)
 
     ;disabling password expire for development purposes
     zn "%SYS"

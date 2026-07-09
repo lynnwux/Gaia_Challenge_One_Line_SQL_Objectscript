@@ -1,0 +1,3 @@
+ROUTINE CacheRunner
+ Do $ZF(-1, "python3 /home/irisowner/dev/src/cache_data.py")
+ Quit
