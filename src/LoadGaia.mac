@@ -1,0 +1,3 @@
+ROUTINE LoadGaia
+ Do ##class(%SYS.Python).Run("exec(open('/home/irisowner/dev/src/load_gaia.py').read())")
+ Quit

@@ -1,6 +1,2 @@
 ROUTINE RunScript
- New t
- Set t = $ZHOROLOG
- Do $ZF(-1, "python3 /home/irisowner/dev/analyze_variability.py")
- Write "Elapsed time: ", $ZHOROLOG - t, " seconds", !
- Quit
+ s f=##class(%Stream.FileCharacter).%New(),f.Filename="/home/irisowner/dev/data/out/variable_objects.csv" d f.WriteLine("source_id,bp_min_flux,bp_max_flux,rp_min_flux,rp_max_flux,percentage_change") s r=##class(%SQL.Statement).%ExecDirect(,"SELECT source_id,bp_min_flux,bp_max_flux,rp_min_flux,rp_max_flux,CASE WHEN (bp_max_flux-bp_min_flux)/bp_min_flux>=(rp_max_flux-rp_min_flux)/rp_min_flux THEN (bp_max_flux-bp_min_flux)/bp_min_flux*100 ELSE (rp_max_flux-rp_min_flux)/rp_min_flux*100 END percentage_change FROM(SELECT id source_id,MIN(CASE WHEN b=0 THEN f END) bp_min_flux,MAX(CASE WHEN b=0 THEN f END) bp_max_flux,MIN(CASE WHEN b=1 THEN f END) rp_min_flux,MAX(CASE WHEN b=1 THEN f END) rp_max_flux FROM g GROUP BY id)WHERE(bp_max_flux-bp_min_flux)/bp_min_flux*100>100 OR(rp_max_flux-rp_min_flux)/rp_min_flux*100>100") while r.%Next(){d f.WriteLine(r.%GetData(1)_","_r.%GetData(2)_","_r.%GetData(3)_","_r.%GetData(4)_","_r.%GetData(5)_","_r.%GetData(6))} d f.%Save()
