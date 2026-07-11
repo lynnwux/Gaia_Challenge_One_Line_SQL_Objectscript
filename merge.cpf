@@ -3,4 +3,3 @@ CreateDatabase:Name=TEMP_DATA,Directory=/usr/irissys/mgr/TEMP_DATA,Resource=%DB_
 ModifyService:Name=%Service_CallIn,Enabled=1
 Execute:Namespace=USER,ClassName=%SYSTEM.OBJ,MethodName=Load,Arg1=/home/irisowner/dev/src/RunScript.mac,Arg2=ck
 Execute:Namespace=USER,ClassName=%SYSTEM.OBJ,MethodName=Load,Arg1=/home/irisowner/dev/src/LoadGaia.mac,Arg2=ck
-Execute:Namespace=USER,RoutineName=LoadGaia
