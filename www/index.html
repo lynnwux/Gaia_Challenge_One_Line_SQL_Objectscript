@@ -287,11 +287,9 @@
 
 <script>
 const API = '/api';
-const AUTH = 'Basic ' + btoa('_SYSTEM:SYS');
-const HEADERS = { 'Authorization': AUTH, 'Content-Type': 'application/json' };
 
 async function apiFetch(path, opts = {}) {
-  return fetch(API + path, { ...opts, headers: { ...HEADERS, ...(opts.headers||{}) } });
+  return fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) } });
 }
 const PAR = 88;
 const MAX_HOLES = 9;
