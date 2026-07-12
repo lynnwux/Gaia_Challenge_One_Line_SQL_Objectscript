@@ -1,0 +1,33 @@
+app = "gaia-sql-golden-tee"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ISC_CPF_MERGE_FILE = "/home/irisowner/dev/merge.cpf"
+
+# Set BEDROCK_BEARER_TOKEN as a secret:
+#   fly secrets set BEDROCK_BEARER_TOKEN=your_key_here
+
+[[services]]
+  internal_port = 52773
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 10
+    soft_limit = 8
+
+[mounts]
+  source = "iris_data"
+  destination = "/usr/irissys/mgr"

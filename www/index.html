@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Golden Tee Golf ⛳</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛳</text></svg>">
+<style>
+  :root {
+    --green: #2d6a4f;
+    --fairway: #40916c;
+    --rough: #1b4332;
+    --flag: #e63946;
+    --sand: #f4a261;
+    --sky: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --correct: #3fb950;
+    --wrong: #f85149;
+    --mono: 'Fira Code', 'Cascadia Code', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--sky); color: var(--text); font-family: -apple-system, sans-serif; min-height: 100vh; }
+
+  @import url('https://fonts.googleapis.com/css2?family=Russo+One&display=swap');
+
+  header {
+    position: relative;
+    overflow: hidden;
+    padding: 0;
+    border-bottom: 4px solid #c8860a;
+    background: #000;
+  }
+  .header-grass {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at 50% 120%, #1a4a1a 0%, #0a2a0a 60%, #000 100%);
+    z-index: 0;
+  }
+  /* grass texture stripes */
+  .header-grass::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 18px,
+      rgba(0,60,0,0.25) 18px, rgba(0,60,0,0.25) 36px
+    );
+    z-index: 1;
+  }
+  .header-inner {
+    position: relative; z-index: 2;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.3rem 2rem 1.1rem;
+    gap: 0;
+  }
+  .arcade-title {
+    font-family: 'Russo One', 'Impact', 'Arial Black', sans-serif;
+    font-size: clamp(1.6rem, 5vw, 3.2rem);
+    line-height: 1;
+    white-space: nowrap;
+    text-align: center;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    /* perspective squeeze: big left, small right */
+    transform: perspective(250px) rotateY(20deg) scaleY(1.08);
+    transform-origin: center center;
+    /* gold gradient fill */
+    background: linear-gradient(180deg,
+      #fff8c0 0%,
+      #ffd700 18%,
+      #e8960a 45%,
+      #b85c00 68%,
+      #7a3200 85%,
+      #3a1500 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter:
+      drop-shadow(0 0 18px rgba(255,80,0,0.9))
+      drop-shadow(0 0 6px rgba(255,160,0,0.7))
+      drop-shadow(3px 4px 0px rgba(0,0,0,0.9));
+    user-select: none;
+  }
+  .arcade-sub {
+    font-family: 'Russo One', 'Impact', sans-serif;
+    font-size: clamp(0.6rem, 1.6vw, 0.85rem);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7fffb0;
+    text-shadow: 0 0 8px #00ff88, 0 0 2px #00aa55;
+    margin-top: 0.2rem;
+  }
+  .header-powered {
+    position: absolute; bottom: 0.4rem; right: 0.8rem; z-index: 3;
+    font-size: 0.45rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+  }
+  .flag { display: none; }
+
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 1rem; padding: 1rem; max-width: 1400px; margin: 0 auto; }
+
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .panel-header { background: var(--rough); padding: 0.6rem 1rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #b7e4c7; display: flex; align-items: center; gap: 0.5rem; }
+
+  /* Schema panel */
+  .schema-col { padding: 0.7rem 1rem; border-bottom: 1px solid var(--border); }
+  .schema-col:last-child { border-bottom: none; }
+  .col-name { font-family: var(--mono); font-size: 0.95rem; color: #79c0ff; }
+  .col-type { font-family: var(--mono); font-size: 0.75rem; color: var(--sand); margin-left: 0.5rem; }
+  .col-desc { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .goal-box { padding: 0.8rem 1rem; background: #0d2818; border-top: 2px solid var(--fairway); font-size: 0.85rem; line-height: 1.5; }
+  .goal-box strong { color: var(--correct); }
+
+  /* Preview */
+  .preview-table { width: 100%; font-family: var(--mono); font-size: 0.78rem; border-collapse: collapse; }
+  .preview-table th { background: #1c2128; padding: 0.4rem 0.7rem; text-align: left; color: var(--sand); border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+  .preview-table td { padding: 0.3rem 0.7rem; border-bottom: 1px solid #21262d; }
+  .preview-table tr:hover td { background: #1c2128; }
+  .table-wrap { max-height: 220px; overflow-y: auto; }
+
+  /* Scorecard */
+  .scorecard { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; padding: 0.8rem; }
+  .hole { background: #1c2128; border-radius: 6px; padding: 0.4rem; text-align: center; border: 2px solid transparent; transition: all 0.2s; }
+  .hole.current { border-color: var(--fairway); box-shadow: 0 0 8px rgba(64,145,108,0.4); }
+  .hole.correct { border-color: var(--correct); background: #0d2818; }
+  .hole.wrong { border-color: var(--wrong); background: #2d0a0a; }
+  .hole.error { border-color: var(--sand); background: #2d1800; }
+  .hole-num { font-size: 0.65rem; color: var(--muted); }
+  .hole-score { font-size: 1.1rem; font-weight: 700; margin: 0.1rem 0; }
+  .hole-label { font-size: 0.6rem; color: var(--muted); }
+  .par-row { display: flex; justify-content: space-between; padding: 0 0.8rem 0.5rem; font-size: 0.78rem; color: var(--muted); }
+
+  /* SQL editor */
+  .editor-area { padding: 0.8rem; }
+  textarea {
+    width: 100%; height: 90px; background: #0d1117; border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: var(--mono); font-size: 0.9rem;
+    padding: 0.7rem; resize: vertical; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--fairway); }
+  .editor-footer { display: flex; gap: 0.5rem; margin-top: 0.5rem; align-items: center; }
+  .char-count { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+  .char-count.under { color: var(--correct); }
+  .char-count.over { color: var(--wrong); }
+
+  button {
+    padding: 0.5rem 1.2rem; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600; transition: all 0.15s;
+  }
+  .btn-swing { background: var(--fairway); color: white; }
+  .btn-swing:hover { background: var(--green); }
+  .btn-swing:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+  .btn-roast { background: var(--flag); color: white; }
+  .btn-roast:hover { background: #c1121f; }
+  .btn-reset { background: #21262d; color: var(--text); }
+  .btn-reset:hover { background: #30363d; }
+
+  /* Result */
+  .result-box { margin: 0.5rem 0.8rem; padding: 0.7rem; border-radius: 6px; font-size: 0.85rem; line-height: 1.5; display: none; }
+  .result-box.correct { background: #0d2818; border: 1px solid var(--correct); }
+  .result-box.wrong { background: #2d0a0a; border: 1px solid var(--wrong); }
+  .result-box.error { background: #2d1800; border: 1px solid var(--sand); }
+
+  .result-preview { margin-top: 0.5rem; }
+  .result-preview table { width: 100%; font-family: var(--mono); font-size: 0.75rem; border-collapse: collapse; }
+  .result-preview th { color: var(--sand); padding: 0.2rem 0.5rem; text-align: left; }
+  .result-preview td { padding: 0.2rem 0.5rem; color: var(--muted); }
+
+  /* Roast panel */
+  .roast-box { padding: 1rem; font-size: 0.9rem; line-height: 1.7; display: none; }
+  .roast-box.visible { display: block; }
+  .roast-text { background: #1c2128; border-radius: 8px; padding: 1rem; border-left: 3px solid var(--flag); color: var(--text); }
+  .spoiler-block { margin-top: 0.8rem; border-radius: 8px; overflow: hidden; border: 2px solid var(--flag); }
+  .spoiler-label { background: var(--flag); color: white; font-family: var(--mono); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.1em; padding: 0.5rem 1rem; text-align: center; animation: spoiler-flash 1s ease-in-out 3; }
+  .spoiler-answer-label { color: var(--muted); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .spoiler-content { background: #1c2128; padding: 1rem; font-family: var(--mono); font-size: 0.85rem; color: #ffd700; line-height: 1.6; white-space: pre-wrap; }
+  @keyframes spoiler-flash { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .roast-loading { color: var(--muted); font-style: italic; }
+
+  /* Stats bar */
+  .stats-bar { display: flex; gap: 1.5rem; padding: 0.6rem 1rem; background: #1c2128; border-top: 1px solid var(--border); font-size: 0.8rem; }
+  .stat { display: flex; flex-direction: column; }
+  .stat-val { font-family: var(--mono); font-weight: 700; font-size: 1rem; }
+  .stat-label { color: var(--muted); font-size: 0.7rem; }
+
+  /* Right column layout */
+  .right-col { display: flex; flex-direction: column; gap: 1rem; }
+  .play-panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+
+  .quip-box { margin: 0 0.8rem 0.5rem; padding: 0.6rem 0.9rem; border-radius: 6px; font-size: 0.85rem; font-style: italic; color: #f4c97a; background: #1e1a0e; border-left: 3px solid var(--sand); display: none; }
+  .quip-loading { color: var(--muted); }
+  .game-over-banner { background: var(--rough); padding: 0.6rem 1rem; text-align: center; font-size: 0.85rem; display: none; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-grass"></div>
+  <div class="header-inner">
+    <div class="arcade-title">SQL Golden Tee Golf</div>
+    <div class="arcade-sub">⛳ &nbsp; 9 holes &nbsp;·&nbsp; Par 88 &nbsp;·&nbsp; Find the active stars &nbsp; ⛳</div>
+  </div>
+  <div class="header-powered">Powered by InterSystems IRIS</div>
+</header>
+
+<div class="layout">
+
+  <!-- Left column: schema + preview -->
+  <div style="display:flex;flex-direction:column;gap:1rem;">
+
+    <div class="panel">
+      <div class="panel-header">📋 Table Schema &nbsp;<code style="background:#0d2818;padding:0.1rem 0.5rem;border-radius:4px;color:#79c0ff;font-size:0.9rem;letter-spacing:0.05em">g</code></div>
+      <div id="schema-cols">
+        <div class="schema-col"><span class="col-name">id</span><span class="col-type">BIGINT</span><div class="col-desc">Gaia source_id — unique star identifier</div></div>
+        <div class="schema-col"><span class="col-name">b</span><span class="col-type">TINYINT</span><div class="col-desc">Band: 0 = BP (blue photometer), 1 = RP (red photometer)</div></div>
+        <div class="schema-col"><span class="col-name">f</span><span class="col-type">FLOAT</span><div class="col-desc">Flux in electrons/sec — one observation per row</div></div>
+      </div>
+      <div class="goal-box">
+        🚩 <strong>Goal:</strong> Find all stars whose flux (f) changed by more than 100% in either the BP (b=0) or RP (b=1) band over the Gaia observation period.<br>
+        ⚠️ <strong>Note:</strong> Some observations are invalid (f=0) due to detector noise — a star with even one bad reading will trivially look variable.<br>
+        🗄️ <strong>Data:</strong> 5,668,090 rows total<br>
+        🎯 <strong>Target Answer:</strong> <strong style="color:#ffffff">57,099 stars</strong>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">🔭 Data Preview <span style="margin-left:auto;font-weight:400;opacity:0.7">top 20 rows</span></div>
+      <div class="table-wrap">
+        <table class="preview-table">
+          <thead><tr><th>id</th><th>b</th><th>f</th></tr></thead>
+          <tbody id="preview-body"><tr><td colspan="3" style="color:var(--muted);padding:1rem">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right column: game -->
+  <div class="right-col">
+
+    <div class="play-panel">
+      <div class="panel-header">🏌️ Scorecard — 9 Holes <span style="margin-left:auto;font-weight:400;opacity:0.7">Par 88 chars</span></div>
+      <div class="scorecard" id="scorecard"></div>
+      <div class="par-row">
+        <span>Hole 1–9</span>
+        <span id="total-label">Total: —</span>
+      </div>
+    </div>
+
+    <div class="play-panel">
+      <div class="panel-header">🏒 Your Shot</div>
+      <div class="editor-area">
+        <textarea id="sql-input" placeholder="SELECT id FROM g WHERE ..." spellcheck="false"></textarea>
+        <div class="editor-footer">
+          <span class="char-count" id="char-count">0 chars</span>
+          <span style="color:var(--muted);font-size:0.8rem">· par 88</span>
+          <button class="btn-swing" id="btn-swing" onclick="swing()">⛳ Swing!</button>
+          <button class="btn-reset" onclick="resetGame()">↺ New Game</button>
+        </div>
+      </div>
+      <div class="result-box" id="result-box"></div>
+      <div class="quip-box" id="quip-box"></div>
+      <div class="game-over-banner" id="game-over-banner"></div>
+      <div class="stats-bar">
+        <div class="stat"><span class="stat-val" id="stat-hole">1/9</span><span class="stat-label">Hole</span></div>
+        <div class="stat"><span class="stat-val" id="stat-best">—</span><span class="stat-label">Best chars</span></div>
+        <div class="stat"><span class="stat-val" id="stat-correct">—</span><span class="stat-label">Correct hits</span></div>
+        <div class="stat"><span class="stat-val" id="stat-gap">+∞</span><span class="stat-label">Best gap</span></div>
+      </div>
+    </div>
+
+    <div class="panel" id="roast-panel" style="display:none">
+      <div class="panel-header">🤖 AI Caddie Report</div>
+      <div class="roast-box visible" id="roast-box"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = '/api';
+const AUTH = 'Basic ' + btoa('_SYSTEM:SYS');
+const HEADERS = { 'Authorization': AUTH, 'Content-Type': 'application/json' };
+
+async function apiFetch(path, opts = {}) {
+  return fetch(API + path, { ...opts, headers: { ...HEADERS, ...(opts.headers||{}) } });
+}
+const PAR = 88;
+const MAX_HOLES = 9;
+
+let holes = [];     // {sql, chars, count, correct, error}
+let gameOver = false;
+
+// Init scorecard
+function initScorecard() {
+  const sc = document.getElementById('scorecard');
+  sc.innerHTML = '';
+  for (let i = 1; i <= MAX_HOLES; i++) {
+    const d = document.createElement('div');
+    d.className = 'hole' + (i === 1 ? ' current' : '');
+    d.id = `hole-${i}`;
+    d.innerHTML = `<div class="hole-num">H${i}</div><div class="hole-score">—</div><div class="hole-label">—</div>`;
+    sc.appendChild(d);
+  }
+}
+
+function updateScorecard() {
+  holes.forEach((h, i) => {
+    const el = document.getElementById(`hole-${i+1}`);
+    if (!el) return;
+    el.classList.remove('current','correct','wrong','error');
+    if (h.error) {
+      el.classList.add('error');
+      el.querySelector('.hole-score').textContent = 'ERR';
+      el.querySelector('.hole-label').textContent = h.chars + 'c';
+    } else if (h.correct) {
+      el.classList.add('correct');
+      const diff = h.chars - PAR;
+      el.querySelector('.hole-score').textContent = diff <= 0 ? (diff === 0 ? 'E' : diff) : '+' + diff;
+      el.querySelector('.hole-label').textContent = h.chars + 'c ✓';
+    } else {
+      el.classList.add('wrong');
+      el.querySelector('.hole-score').textContent = 'OB';
+      el.querySelector('.hole-label').textContent = h.chars + 'c';
+    }
+  });
+  // Mark next hole as current
+  const next = holes.length + 1;
+  if (next <= MAX_HOLES && !gameOver) {
+    const el = document.getElementById(`hole-${next}`);
+    if (el) el.classList.add('current');
+  }
+
+  // Update stats
+  document.getElementById('stat-hole').textContent = `${Math.min(holes.length+1, MAX_HOLES)}/${MAX_HOLES}`;
+  const correctHoles = holes.filter(h => h.correct);
+  document.getElementById('stat-correct').textContent = correctHoles.length || '—';
+  const bestChars = correctHoles.length ? Math.min(...correctHoles.map(h => h.chars)) : null;
+  document.getElementById('stat-best').textContent = bestChars ?? '—';
+  document.getElementById('stat-gap').textContent = bestChars != null ? (bestChars - PAR >= 0 ? '+' : '') + (bestChars - PAR) : '+∞';
+
+  // Total
+  const total = holes.reduce((s, h) => s + (h.error ? PAR + 5 : h.chars), 0);
+  document.getElementById('total-label').textContent = holes.length ? `Total: ${total}` : 'Total: —';
+}
+
+async function swing() {
+  if (gameOver) return;
+  const sql = document.getElementById('sql-input').value.trim();
+  if (!sql) return;
+
+  const btn = document.getElementById('btn-swing');
+  btn.disabled = true; btn.textContent = '…';
+
+  const res = document.getElementById('result-box');
+  res.style.display = 'none';
+  document.getElementById('quip-box').style.display = 'none';
+
+  try {
+    const r = await apiFetch('/run', { method: 'POST', body: JSON.stringify({sql}) });
+    const data = await r.json();
+
+    const hole = { sql, chars: sql.length, count: data.count ?? -1, correct: data.correct ?? false, error: data.error };
+    holes.push(hole);
+    updateScorecard();
+
+    // Show result
+    res.style.display = 'block';
+    if (data.error) {
+      res.className = 'result-box error';
+      res.innerHTML = `<strong>⚠️ SQL Error:</strong> ${escHtml(data.error)}<br><small>+5 stroke penalty applied</small>`;
+    } else if (data.correct) {
+      const gap = data.chars - PAR;
+      res.className = 'result-box correct';
+      res.innerHTML = `<strong>✅ Correct! ${data.count.toLocaleString()} rows</strong> · ${data.chars} chars · ${gap >= 0 ? '+'+gap : gap} vs par`;
+    } else {
+      res.className = 'result-box wrong';
+      res.innerHTML = `<strong>❌ Wrong: got ${(data.count||0).toLocaleString()} rows</strong> (need 57,099) · ${data.chars} chars`;
+    }
+    if (!data.error && data.preview?.length) {
+      const cols = Object.keys(data.preview[0]);
+      res.innerHTML += `<div class="result-preview"><table>
+        <tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr>
+        ${data.preview.map(r=>`<tr>${cols.map(c=>`<td>${r[c]}</td>`).join('')}</tr>`).join('')}
+        </table><small style="color:var(--muted)">top ${data.preview.length} rows</small></div>`;
+    }
+
+    // Fire per-shot quip immediately (non-blocking)
+    showQuip(data, sql);
+
+    if (holes.length >= MAX_HOLES) { gameOver = true; finishGame(); }
+  } finally {
+    btn.disabled = gameOver;
+    btn.textContent = gameOver ? 'Game Over' : '⛳ Swing!';
+  }
+}
+
+async function showQuip(data, sql) {
+  const qb = document.getElementById('quip-box');
+  qb.style.display = 'block';
+  qb.innerHTML = '<span class="quip-loading">🤖 caddie is watching…</span>';
+  try {
+    const r = await apiFetch('/judge', { method: 'POST', body: JSON.stringify({
+      quick: 1, sql, count: data.count ?? -1, chars: sql.length, errMsg: data.error ?? '', correct: data.correct ?? false
+    })});
+    const d = await r.json();
+    qb.textContent = '🤖 ' + d.roast;
+  } catch(e) {
+    qb.style.display = 'none';
+  }
+}
+
+async function finishGame() {
+  const banner = document.getElementById('game-over-banner');
+  banner.style.display = 'block';
+  const correctHoles = holes.filter(h => h.correct);
+  banner.textContent = correctHoles.length
+    ? `🏁 Round complete! ${correctHoles.length}/9 correct — fetching your caddie report…`
+    : `🏁 Round complete! No correct answers — but the caddie has thoughts…`;
+
+  // Show roast panel with loading
+  document.getElementById('roast-panel').style.display = 'block';
+  const rb = document.getElementById('roast-box');
+  rb.innerHTML = '<div class="roast-loading">🤖 Caddie is reviewing your round…</div>';
+
+  const bestChars = correctHoles.length ? Math.min(...correctHoles.map(h => h.chars)) : 999;
+  const bestCount = correctHoles.length ? correctHoles[0].count : (holes[0]?.count ?? 0);
+
+  const r = await apiFetch('/judge', { method: 'POST', body: JSON.stringify({ tries: MAX_HOLES, bestCount, bestChars, history: holes.map(h => ({chars: h.chars, count: h.count ?? -1, correct: h.correct})) }) });
+  const data = await r.json();
+  const spoilerMarker = '!!!!! SPOILER ALERT !!!!!';
+  const roast = data.roast;
+  const spoilerIdx = roast.indexOf(spoilerMarker);
+  if (spoilerIdx !== -1) {
+    const before = escHtml(roast.slice(0, spoilerIdx).trim());
+    const after = escHtml(roast.slice(spoilerIdx + spoilerMarker.length).trim());
+    rb.innerHTML = `<div class="roast-text">${before}</div>
+      <div class="spoiler-block">
+        <div class="spoiler-label">!!!!! SPOILER ALERT !!!!!</div>
+        <div class="spoiler-content"><div class="spoiler-answer-label">🔑 Answer Key</div>${after}</div>
+      </div>`;
+  } else {
+    rb.innerHTML = `<div class="roast-text">${escHtml(roast)}</div>`;
+  }
+}
+
+function resetGame() {
+  holes = []; gameOver = false;
+  document.getElementById('sql-input').value = '';
+  document.getElementById('result-box').style.display = 'none';
+  document.getElementById('quip-box').style.display = 'none';
+  document.getElementById('roast-panel').style.display = 'none';
+  document.getElementById('game-over-banner').style.display = 'none';
+  document.getElementById('btn-swing').disabled = false;
+  document.getElementById('btn-swing').textContent = '⛳ Swing!';
+  initScorecard(); updateScorecard();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// Char counter
+document.getElementById('sql-input').addEventListener('input', function() {
+  const n = this.value.trim().length;
+  const el = document.getElementById('char-count');
+  el.textContent = n + ' chars';
+  el.className = 'char-count ' + (n === 0 ? '' : n <= PAR ? 'under' : 'over');
+});
+
+// Load preview
+async function loadPreview() {
+  try {
+    const r = await apiFetch('/preview');
+    const data = await r.json();
+    const tbody = document.getElementById('preview-body');
+    tbody.innerHTML = data.rows.map(row =>
+      `<tr><td>${row.id}</td><td>${row.b}</td><td>${row.f.toFixed(2)}</td></tr>`
+    ).join('');
+  } catch(e) {
+    document.getElementById('preview-body').innerHTML = '<tr><td colspan="3" style="color:var(--wrong)">Failed to load preview</td></tr>';
+  }
+}
+
+initScorecard();
+loadPreview();
+</script>
+</body>
+</html>

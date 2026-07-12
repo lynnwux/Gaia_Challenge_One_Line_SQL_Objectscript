@@ -1,63 +1,50 @@
-# Gaia DR3 Variable Star Finder — One Line of ObjectScript
+# SQL Golden Tee Golf ⛳
 
-InterSystems Employee Programming Challenge #1 — Code Golf submission.
+InterSystems Employee Programming Challenge #1 — SQL game submission.
 
-Identifies all Gaia DR3 epoch photometry sources whose BP or RP flux changed by more than 100% across the observation period. The entire computation is one executable line of ObjectScript.
+Play 9 holes of SQL golf against real Gaia DR3 epoch photometry data. Find the variable stars in as few characters as possible, with a snarky Gen Z caddie powered by IRIS AI Hub roasting every shot.
 
-## How It Works
+## The Challenge
 
-The 20 Gaia DR3 epoch photometry files are flattened into a single IRIS SQL table:
+Table `g(id BIGINT, b TINYINT, f FLOAT)` — 5.6 million flux observations from 20 Gaia DR3 files.
 
-```
-g(id BIGINT, b TINYINT, f FLOAT)
-```
+- `b=0` = BP (blue photometer), `b=1` = RP (red photometer)
+- One row per observation. Invalid readings stored as `f=0` (detector noise).
 
-`b=0` is the BP band, `b=1` is the RP band. One row per observation. Missing or invalid flux readings are stored as SQL NULL and are ignored by aggregate functions automatically.
+**Goal:** Find every distinct star ID where flux varies by more than 100% in either band — meaning `MAX(f) > 2*MIN(f)` within a star+band group.
 
-`do ^RunScript` executes a single ObjectScript line that opens a file stream, writes the CSV header, runs the SQL, streams all 57,099 results to disk, and saves — no helper classes, no logic outside the SQL engine.
+**Target:** exactly **57,099 stars**. **Par:** 88 characters.
 
-```objectscript
-ROUTINE RunScript
- s f=##class(%Stream.FileCharacter).%New(),f.Filename="/home/irisowner/dev/data/out/variable_objects.csv" d f.WriteLine("source_id,bp_min_flux,bp_max_flux,rp_min_flux,rp_max_flux,percentage_change") s r=##class(%SQL.Statement).%ExecDirect(,"SELECT source_id,bp_min_flux,bp_max_flux,rp_min_flux,rp_max_flux,CASE WHEN (bp_max_flux-bp_min_flux)/bp_min_flux>=(rp_max_flux-rp_min_flux)/rp_min_flux THEN (bp_max_flux-bp_min_flux)/bp_min_flux*100 ELSE (rp_max_flux-rp_min_flux)/rp_min_flux*100 END percentage_change FROM(SELECT id source_id,MIN(CASE WHEN b=0 THEN f END) bp_min_flux,MAX(CASE WHEN b=0 THEN f END) bp_max_flux,MIN(CASE WHEN b=1 THEN f END) rp_min_flux,MAX(CASE WHEN b=1 THEN f END) rp_max_flux FROM g GROUP BY id)WHERE(bp_max_flux-bp_min_flux)/bp_min_flux*100>100 OR(rp_max_flux-rp_min_flux)/rp_min_flux*100>100") while r.%Next(){d f.WriteLine(r.%GetData(1)_","_r.%GetData(2)_","_r.%GetData(3)_","_r.%GetData(4)_","_r.%GetData(5)_","_r.%GetData(6))} d f.%Save()
-```
+## How to Play
 
-The SQL is a two-layer pivot. The inner query uses `CASE WHEN b=0/1` to split BP and RP into separate columns within a single `GROUP BY id`. The outer query computes `(max-min)/min*100` per band and reports the larger value as `percentage_change`, filtering to >100%.
+Open the web app, write SQL in the editor, and hit Swing. You get 9 holes. Each hole scores your character count against par 88. After every shot the AI caddie drops a roast. After 9 holes the caddie delivers a full round report — and if you never got correct, the spoiler drops.
 
-`s` and `d` are standard ObjectScript abbreviations for `set` and `do` — part of the language specification.
+The caddie knows the classic trap: without `f>0`, the answer inflates to exactly 70,688. That's the detector-noise hazard. The filter isn't optional — it's load-bearing.
 
-## Output
+Reference solution (par): `SELECT DISTINCT id FROM(SELECT id FROM g WHERE f>0 GROUP BY id,b HAVING MAX(f)>2*MIN(f))`
 
-`data/out/variable_objects.csv` — 57,099 rows plus header:
+## Stack
 
-```
-source_id,bp_min_flux,bp_max_flux,rp_min_flux,rp_max_flux,percentage_change
-10655814178816,23.783341359526982472,157841.99293824387132,35.634526749900565789,1566.8893953334513753,663566.17941602435894
-...
-```
+- **IRIS SQL** — `LOAD DATA FROM FILE` ingests 5.6M rows at build time
+- **Embedded Python** (`%SYS.Python.Run`) — parses and pre-aggregates the 20 gzipped Gaia CSVs
+- **`%CSP.REST`** (`GAIA.API`) — `/api/run`, `/api/judge`, `/api/preview`, `/api/schema`
+- **`%AI.Agent`** (`GAIA.SqlJudge`) — golf caddie persona via IRIS AI Hub
+- **Static HTML** (`/app`) — SQL editor, scorecard, spoiler block
 
-## Installation
+## Run It
 
-Requirements: Docker, Docker Compose.
+Requirements: Docker, IRIS 2026.2 AI Edition, Amazon Bedrock access.
 
 ```bash
-git clone https://github.com/lynnwux/Gaia_Challenge_One_Line_SQL_Objectscript
-cd Gaia_Challenge_One_Line_SQL_Objectscript
+git clone https://github.com/lynnwux/Gaia_Challenge_SQL_Golden_Tee
+cd Gaia_Challenge_SQL_Golden_Tee
 docker compose up
 ```
 
-The container decompresses the 20 Gaia input files and loads them into IRIS SQL on first start.
+The container decompresses and loads all Gaia data during `docker build`. On first start, open `http://localhost:52773/app/index.html`.
 
-To run and generate the output CSV:
+Set `BEDROCK_BEARER_TOKEN` in your environment for AI caddie commentary. Without it, the game still runs — the caddie just stays quiet.
 
-```bash
-docker exec -it <container_name> iris session IRIS -U USER
-do ^RunScript
-```
+## AI Caddie
 
-The result is written to `data/out/variable_objects.csv`.
-
-## Feedback
-
-IRIS made the one-liner possible. `LOAD DATA FROM FILE` ingested 5.6 million rows in seconds. `%SQL.Statement.%ExecDirect` executed the pivot query and returned a streaming result set. `%Stream.FileCharacter` wrote it directly to disk. The entire pipeline — ingest, aggregate, filter, output — runs inside a single IRIS session with no external processes, no network hops, and no dependencies beyond the standard library.
-
-The `CASE WHEN` pivot pattern for splitting the flat `(id, band, flux)` table into per-band columns is what kept the SQL self-contained. It turned a multi-step transformation into a single pass the query optimizer could handle end to end.
+`GAIA.SqlJudge` extends `%AI.Agent`. Its `INSTRUCTIONS` XData block defines the caddie persona — golf metaphors, Gen Z slang, knowledge of the 70,688 trap, and response rules per outcome (error, wrong count, correct but over par, exact par, under par). `GAIA.API.Judge()` calls it with a quick per-shot quip or a full end-of-round report.

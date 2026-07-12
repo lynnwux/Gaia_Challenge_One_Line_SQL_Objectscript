@@ -18,7 +18,7 @@ with open('/tmp/g.csv', 'w') as out:
                 for v in arr[1:-1].split(b','):
                     v = v.strip()
                     if v:
-                        val = '' if v == b'NaN' else v.decode()
+                        val = '0' if v == b'NaN' else v.decode()
                         out.write(f"{sid},{b},{val}\n")
 
 try: iris.sql.exec("DROP TABLE g")
