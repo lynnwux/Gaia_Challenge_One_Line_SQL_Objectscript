@@ -16,5 +16,3 @@ services:
       - 53773
     volumes:
       - ./:/home/irisowner/dev
-      - "C:\\Users\\xwu\\Downloads:/keys"
-    command: ["-k", "/keys/iris-container-x64.key"]

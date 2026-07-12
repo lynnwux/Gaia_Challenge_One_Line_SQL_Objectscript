@@ -2,7 +2,9 @@
 
 InterSystems Employee Programming Challenge #1 — SQL game submission.
 
-Play 9 holes of SQL golf against real Gaia DR3 epoch photometry data. Find the variable stars in as few characters as possible, with a snarky Gen Z caddie powered by IRIS AI Hub roasting every shot.
+Play 9 holes of SQL golf against real Gaia DR3 epoch photometry data. Find the variable stars in as few characters as possible, with a snarky Gen Z caddie powered by **IRIS AI Hub** roasting every shot.
+
+**[▶ Play it live →](https://gaia-sql-golden-tee.fly.dev/app/index.html)**
 
 ## The Challenge
 
@@ -23,28 +25,35 @@ The caddie knows the classic trap: without `f>0`, the answer inflates to exactly
 
 Reference solution (par): `SELECT DISTINCT id FROM(SELECT id FROM g WHERE f>0 GROUP BY id,b HAVING MAX(f)>2*MIN(f))`
 
+## IRIS AI Hub
+
+The AI caddie is built on **IRIS AI Hub** — the AI orchestration layer in IRIS 2026.1+:
+
+- **`GAIA.SqlJudge`** extends `%AI.Agent` — the IRIS AI Hub agent class. Its caddie persona lives in an `XData INSTRUCTIONS` block (golf metaphors, Gen Z slang, knowledge of the 70,688 trap, and per-outcome response rules).
+- **`%AI.Provider.Create("bedrock", ...)`** — IRIS AI Hub's provider abstraction. `"bedrock"` is the configured backend (Amazon Bedrock); swapping to any other `%AI.Provider`-compatible backend requires only changing this one call.
+- The `BEDROCK_BEARER_TOKEN` environment variable carries the Bedrock API key. It is injected at runtime as a secret and is **never stored in the repository or image**.
+
+The public hosted version runs with a pre-configured key. Self-hosted clones need to supply their own.
+
 ## Stack
 
 - **IRIS SQL** — `LOAD DATA FROM FILE` ingests 5.6M rows at build time
 - **Embedded Python** (`%SYS.Python.Run`) — parses and pre-aggregates the 20 gzipped Gaia CSVs
 - **`%CSP.REST`** (`GAIA.API`) — `/api/run`, `/api/judge`, `/api/preview`, `/api/schema`
-- **`%AI.Agent`** (`GAIA.SqlJudge`) — golf caddie persona via IRIS AI Hub
-- **Static HTML** (`/app`) — SQL editor, scorecard, spoiler block
+- **`%AI.Agent`** / **`%AI.Provider`** (`GAIA.SqlJudge`) — IRIS AI Hub, Bedrock backend
+- **Static HTML** (`/app`) — SQL editor, scorecard, spoiler block, hosted from IRIS CSP
 
-## Run It
+## Run It Yourself
 
-Requirements: Docker, IRIS 2026.2 AI Edition, Amazon Bedrock access.
+Requirements: Docker, IRIS 2026.2 AI Edition image, Amazon Bedrock access.
 
 ```bash
 git clone https://github.com/lynnwux/Gaia_Challenge_SQL_Golden_Tee
 cd Gaia_Challenge_SQL_Golden_Tee
+echo "BEDROCK_BEARER_TOKEN=your_key_here" > .env
 docker compose up
 ```
 
-The container decompresses and loads all Gaia data during `docker build`. On first start, open `http://localhost:52773/app/index.html`.
+The container decompresses and loads all Gaia data during `docker build`. Open `http://localhost:8080/app/index.html`.
 
-Set `BEDROCK_BEARER_TOKEN` in your environment for AI caddie commentary. Without it, the game still runs — the caddie just stays quiet.
-
-## AI Caddie
-
-`GAIA.SqlJudge` extends `%AI.Agent`. Its `INSTRUCTIONS` XData block defines the caddie persona — golf metaphors, Gen Z slang, knowledge of the 70,688 trap, and response rules per outcome (error, wrong count, correct but over par, exact par, under par). `GAIA.API.Judge()` calls it with a quick per-shot quip or a full end-of-round report.
+Without `BEDROCK_BEARER_TOKEN`, the game still runs — the caddie just stays quiet.
