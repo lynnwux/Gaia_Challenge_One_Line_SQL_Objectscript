@@ -1,6 +1,4 @@
     do $System.OBJ.Load("/home/irisowner/dev/src/RunScript.mac","ck")
-    do $System.OBJ.Load("/home/irisowner/dev/src/LoadGaia.mac","ck")
-    do ^LoadGaia
 
     ;disabling password expire for development purposes
     zn "%SYS"
