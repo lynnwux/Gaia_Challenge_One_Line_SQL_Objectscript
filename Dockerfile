@@ -4,7 +4,6 @@ FROM $IMAGE
 WORKDIR /home/irisowner/dev
 COPY . .
 
-## Embedded Python environment
 ENV IRISUSERNAME="_SYSTEM"
 ENV IRISPASSWORD="SYS"
 ENV IRISNAMESPACE="USER"
@@ -14,14 +13,13 @@ ENV PYTHONPATH=/home/irisowner/dev
 
 RUN pip install isal --break-system-packages --quiet
 
-# Pre-decompress input files into /tmp/gaia_data so they survive the docker-compose volume mount.
-# /home/irisowner/dev is bind-mounted at runtime (shadowing the image layer), but /tmp is not.
+# Decompress, load into IRIS, then delete all raw data to keep image under 8GB
 RUN python3 -c "import glob,os,isal.igzip as ig; os.makedirs('/tmp/gaia_data',exist_ok=True); [open('/tmp/gaia_data/'+os.path.basename(gz[:-3]),'wb').write(ig.decompress(open(gz,'rb').read())) for gz in glob.glob('/home/irisowner/dev/data/in/**/*.csv.gz',recursive=True)]"
 
-# Patch CSP gateway to route /api and /app through IRIS
 RUN python3 /home/irisowner/dev/patch_csp.py
 
 RUN iris start IRIS && \
     iris merge IRIS merge.cpf && \
     iris session IRIS < iris.script && \
-    iris stop IRIS quietly safely
+    iris stop IRIS quietly safely && \
+    rm -rf /tmp/gaia_data /tmp/g.csv /home/irisowner/dev/data/in/

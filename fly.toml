@@ -28,6 +28,3 @@ primary_region = "iad"
     hard_limit = 10
     soft_limit = 8
 
-[mounts]
-  source = "iris_data"
-  destination = "/usr/irissys/mgr"
