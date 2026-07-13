@@ -1,0 +1,5 @@
+%ZSTART
+    new $namespace
+    set $namespace = "USER"
+    do ##class(GAIA.Setup).Run()
+    quit

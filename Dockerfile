@@ -18,9 +18,8 @@ RUN pip install isal --break-system-packages --quiet &&     python3 -c "import g
 
 RUN python3 /home/irisowner/dev/patch_csp.py
 
-# Final stage: fresh base image + baked-in Gaia data + app source
-# CSP app registrations are re-created on every startup via merge.cpf [Actions]
-# calling GAIA.Setup.Run() -- avoids irissecurity being wiped by base image init.
+# Final stage: fresh base image + baked-in data + compiled classes
+# %ZSTART (compiled into USER db) re-registers /api and /app on every cold start
 FROM $IMAGE
 
 WORKDIR /home/irisowner/dev
@@ -35,10 +34,13 @@ ENV PYTHONPATH=/home/irisowner/dev
 # Baked-in Gaia data (table g with 5.6M rows)
 COPY --from=builder /usr/irissys/mgr/TEMP_DATA /usr/irissys/mgr/TEMP_DATA
 
+# USER database with compiled GAIA.* classes and %ZSTART routine
+COPY --from=builder /usr/irissys/mgr/user /usr/irissys/mgr/user
+
 # Patched CSP gateway config routing /api and /app
 COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
 
-# App source and config (merge.cpf re-loads classes and runs GAIA.Setup on every start)
+# App source and config
 COPY --from=builder /home/irisowner/dev/src /home/irisowner/dev/src
 COPY --from=builder /home/irisowner/dev/www /home/irisowner/dev/www
 COPY --from=builder /home/irisowner/dev/merge.cpf /home/irisowner/dev/merge.cpf

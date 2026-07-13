@@ -7,13 +7,12 @@
     do ^LoadGaia
     do ##class(GAIA.Setup).Run()
 
-    ;disabling password expire for development purposes
     zn "%SYS"
     Do ##class(Security.Users).UnExpireUserPasswords("*")
-
-    ; enabling callin for Embedded Python
     do ##class(Security.Services).Get("%Service_CallIn",.prop)
     set prop("Enabled")=1
     set prop("AutheEnabled")=48
     do ##class(Security.Services).Modify("%Service_CallIn",.prop)
+
+    do $System.OBJ.Load("/home/irisowner/dev/src/%ZSTART.mac","ck")
     halt
