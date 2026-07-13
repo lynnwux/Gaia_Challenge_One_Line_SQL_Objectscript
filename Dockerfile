@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/irishealth-community:2026.2.0AI.162.0
 
-# Build stage: load data into IRIS, then export only what we need
+# Build stage: load data into IRIS
 FROM $IMAGE AS builder
 
 WORKDIR /home/irisowner/dev
@@ -18,7 +18,7 @@ RUN pip install isal --break-system-packages --quiet &&     python3 -c "import g
 
 RUN python3 /home/irisowner/dev/patch_csp.py
 
-# Final stage: copy only the loaded IRIS install and app files -- no raw CSV layers
+# Final stage: fresh base + only the USER database and app files
 FROM $IMAGE
 
 WORKDIR /home/irisowner/dev
@@ -30,11 +30,12 @@ ENV PYTHON_PATH=/usr/irissys/bin/
 ENV PATH="/usr/irissys/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/irisowner/bin"
 ENV PYTHONPATH=/home/irisowner/dev
 
-# Copy patched CSP config
+# Only copy what the load changed: USER and TEMP_DATA databases, IRIS.DAT journal, patched CSP config
+COPY --from=builder /usr/irissys/mgr/user /usr/irissys/mgr/user
+COPY --from=builder /usr/irissys/mgr/TEMP_DATA /usr/irissys/mgr/TEMP_DATA
+COPY --from=builder /usr/irissys/mgr/iris.lck /usr/irissys/mgr/iris.lck
+COPY --from=builder /usr/irissys/mgr/IRIS.DAT /usr/irissys/mgr/IRIS.DAT
 COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
-
-# Copy the loaded IRIS database (mgr directory contains the actual data)
-COPY --from=builder /usr/irissys/mgr /usr/irissys/mgr
 
 # Copy app source (no data/in/)
 COPY --from=builder /home/irisowner/dev/src /home/irisowner/dev/src
