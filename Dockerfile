@@ -34,6 +34,7 @@ ENV PYTHONPATH=/home/irisowner/dev
 COPY --from=builder /usr/irissys/mgr/user /usr/irissys/mgr/user
 COPY --from=builder /usr/irissys/mgr/TEMP_DATA /usr/irissys/mgr/TEMP_DATA
 COPY --from=builder /usr/irissys/mgr/IRIS.DAT /usr/irissys/mgr/IRIS.DAT
+COPY --from=builder /usr/irissys/mgr/irissecurity /usr/irissys/mgr/irissecurity
 COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
 
 # Copy app source (no data/in/)
