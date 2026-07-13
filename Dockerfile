@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 ARG IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/irishealth-community:2026.2.0AI.162.0
-FROM $IMAGE
+
+# Build stage: load data into IRIS, then export only what we need
+FROM $IMAGE AS builder
 
 WORKDIR /home/irisowner/dev
 COPY . .
@@ -12,10 +14,30 @@ ENV PYTHON_PATH=/usr/irissys/bin/
 ENV PATH="/usr/irissys/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/irisowner/bin"
 ENV PYTHONPATH=/home/irisowner/dev
 
-RUN pip install isal --break-system-packages --quiet
+RUN pip install isal --break-system-packages --quiet &&     python3 -c "import glob,os,isal.igzip as ig; os.makedirs('/tmp/gaia_data',exist_ok=True); [open('/tmp/gaia_data/'+os.path.basename(gz[:-3]),'wb').write(ig.decompress(open(gz,'rb').read())) for gz in glob.glob('/home/irisowner/dev/data/in/*.csv.gz')]" &&     iris start IRIS &&     iris merge IRIS merge.cpf &&     iris session IRIS < iris.script &&     iris stop IRIS quietly safely &&     rm -rf /tmp/gaia_data /tmp/g.csv /home/irisowner/dev/data/in/
 
 RUN python3 /home/irisowner/dev/patch_csp.py
 
-# Bind-mount data/in/ so the .csv.gz files are never written into a layer.
-# Decompress into /tmp, load into IRIS, then clean up -- all in one RUN.
-RUN --mount=type=bind,source=data/in,target=/mnt/gaia_in     python3 -c "import glob,os,isal.igzip as ig; os.makedirs('/tmp/gaia_data',exist_ok=True); [open('/tmp/gaia_data/'+os.path.basename(gz[:-3]),'wb').write(ig.decompress(open(gz,'rb').read())) for gz in glob.glob('/mnt/gaia_in/*.csv.gz')]" &&     iris start IRIS &&     iris merge IRIS merge.cpf &&     iris session IRIS < iris.script &&     iris stop IRIS quietly safely &&     rm -rf /tmp/gaia_data /tmp/g.csv
+# Final stage: copy only the loaded IRIS install and app files -- no raw CSV layers
+FROM $IMAGE
+
+WORKDIR /home/irisowner/dev
+
+ENV IRISUSERNAME="_SYSTEM"
+ENV IRISPASSWORD="SYS"
+ENV IRISNAMESPACE="USER"
+ENV PYTHON_PATH=/usr/irissys/bin/
+ENV PATH="/usr/irissys/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/irisowner/bin"
+ENV PYTHONPATH=/home/irisowner/dev
+
+# Copy patched CSP config
+COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
+
+# Copy the loaded IRIS database (mgr directory contains the actual data)
+COPY --from=builder /usr/irissys/mgr /usr/irissys/mgr
+
+# Copy app source (no data/in/)
+COPY --from=builder /home/irisowner/dev/src /home/irisowner/dev/src
+COPY --from=builder /home/irisowner/dev/www /home/irisowner/dev/www
+COPY --from=builder /home/irisowner/dev/merge.cpf /home/irisowner/dev/merge.cpf
+COPY --from=builder /home/irisowner/dev/iris.script /home/irisowner/dev/iris.script
