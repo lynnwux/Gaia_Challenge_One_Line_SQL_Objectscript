@@ -33,7 +33,6 @@ ENV PYTHONPATH=/home/irisowner/dev
 # Only copy what the load changed: USER and TEMP_DATA databases, IRIS.DAT journal, patched CSP config
 COPY --from=builder /usr/irissys/mgr/user /usr/irissys/mgr/user
 COPY --from=builder /usr/irissys/mgr/TEMP_DATA /usr/irissys/mgr/TEMP_DATA
-COPY --from=builder /usr/irissys/mgr/iris.lck /usr/irissys/mgr/iris.lck
 COPY --from=builder /usr/irissys/mgr/IRIS.DAT /usr/irissys/mgr/IRIS.DAT
 COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
 
