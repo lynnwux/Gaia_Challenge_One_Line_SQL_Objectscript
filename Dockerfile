@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 ARG IMAGE=docker.iscinternal.com/docker-intersystems/intersystems/irishealth-community:2026.2.0AI.162.0
 
-# Build stage: load data into IRIS
+# Build stage: load Gaia data into IRIS SQL table g
 FROM $IMAGE AS builder
 
 WORKDIR /home/irisowner/dev
@@ -18,7 +18,9 @@ RUN pip install isal --break-system-packages --quiet &&     python3 -c "import g
 
 RUN python3 /home/irisowner/dev/patch_csp.py
 
-# Final stage: fresh base + only the USER database and app files
+# Final stage: fresh base image + baked-in Gaia data + app source
+# CSP app registrations are re-created on every startup via merge.cpf [Actions]
+# calling GAIA.Setup.Run() -- avoids irissecurity being wiped by base image init.
 FROM $IMAGE
 
 WORKDIR /home/irisowner/dev
@@ -30,14 +32,13 @@ ENV PYTHON_PATH=/usr/irissys/bin/
 ENV PATH="/usr/irissys/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/irisowner/bin"
 ENV PYTHONPATH=/home/irisowner/dev
 
-# Only copy what the load changed: USER and TEMP_DATA databases, IRIS.DAT journal, patched CSP config
-COPY --from=builder /usr/irissys/mgr/user /usr/irissys/mgr/user
+# Baked-in Gaia data (table g with 5.6M rows)
 COPY --from=builder /usr/irissys/mgr/TEMP_DATA /usr/irissys/mgr/TEMP_DATA
-COPY --from=builder /usr/irissys/mgr/IRIS.DAT /usr/irissys/mgr/IRIS.DAT
-COPY --from=builder /usr/irissys/mgr/irissecurity /usr/irissys/mgr/irissecurity
+
+# Patched CSP gateway config routing /api and /app
 COPY --from=builder /usr/irissys/csp/bin/CSP.ini /usr/irissys/csp/bin/CSP.ini
 
-# Copy app source (no data/in/)
+# App source and config (merge.cpf re-loads classes and runs GAIA.Setup on every start)
 COPY --from=builder /home/irisowner/dev/src /home/irisowner/dev/src
 COPY --from=builder /home/irisowner/dev/www /home/irisowner/dev/www
 COPY --from=builder /home/irisowner/dev/merge.cpf /home/irisowner/dev/merge.cpf

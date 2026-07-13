@@ -1,11 +1,11 @@
     do $System.OBJ.Load("/home/irisowner/dev/src/RunScript.mac","ck")
     do $System.OBJ.Load("/home/irisowner/dev/src/LoadGaia.mac","ck")
-    do $System.OBJ.Load("/home/irisowner/dev/src/GAIA.Setup.mac","ck")
+    do $System.OBJ.Load("/home/irisowner/dev/src/GAIA.Setup.cls","ck")
     do $System.OBJ.Load("/home/irisowner/dev/src/GAIA.API.cls","ck")
     do $System.OBJ.Load("/home/irisowner/dev/src/GAIA.SqlJudge.cls","ck")
     do $System.OBJ.Load("/home/irisowner/dev/src/GAIA.SqlChallenge.cls","ck")
     do ^LoadGaia
-    do ^GAIA.Setup
+    do ##class(GAIA.Setup).Run()
 
     ;disabling password expire for development purposes
     zn "%SYS"
