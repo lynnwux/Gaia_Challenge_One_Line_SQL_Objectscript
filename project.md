@@ -41,7 +41,7 @@ WQM added ~0.15s of per-task overhead for `%SYS.Python.Import` and IPC through s
 
 ---
 
-## SQL Golden Tee Golf — Public Web Game
+## SQL Golf — Public Web Game
 
 A second deliverable built on top of the same Gaia DR3 dataset: an interactive SQL code-golf game deployed publicly at `https://gaia-sql-golden-tee.fly.dev/app/index.html`.
 

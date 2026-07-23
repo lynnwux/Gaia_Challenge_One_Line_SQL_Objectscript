@@ -1,4 +1,4 @@
-# SQL Golden Tee Golf ⛳
+# SQL Golf ⛳
 
 InterSystems Employee Programming Challenge #1 — SQL game submission.
 

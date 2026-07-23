@@ -1,4 +1,4 @@
-# SQL Golden Tee Golf: I Built a Game Where an AI Caddie Roasts Your Queries
+# SQL Golf: I Built a Game Where an AI Caddie Roasts Your Queries
 
 *An InterSystems employee programming challenge, a telescope's worth of star data, and one very judgmental 16-year-old.*
 
