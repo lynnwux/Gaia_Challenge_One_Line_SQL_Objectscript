@@ -2,7 +2,7 @@ ARG IMAGE=intersystemsdc/iris-community
 FROM $IMAGE
 
 WORKDIR /home/irisowner/dev
-COPY . .
+COPY --chown=irisowner:irisowner . .
 
 ENV IRISUSERNAME="_SYSTEM"
 ENV IRISPASSWORD="SYS"
@@ -16,4 +16,5 @@ RUN pip install isal --break-system-packages --quiet && \
     iris start IRIS && \
     iris merge IRIS merge.cpf && \
     iris session IRIS < iris.script && \
-    iris stop IRIS quietly safely
+    iris stop IRIS quietly safely && \
+    date > /usr/irissys/iris.init
