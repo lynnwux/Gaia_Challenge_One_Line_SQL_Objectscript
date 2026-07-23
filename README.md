@@ -42,19 +42,29 @@ Requirements: Docker, Docker Compose.
 ```bash
 git clone https://github.com/lynnwux/Gaia_Challenge_One_Line_SQL_Objectscript
 cd Gaia_Challenge_One_Line_SQL_Objectscript
-docker compose up
+docker compose build
+docker compose up -d
 ```
 
-The container pre-aggregates and loads the 20 Gaia input files into IRIS SQL during `docker build`.
+The container pre-aggregates all 20 Gaia input files into IRIS SQL during `docker build`. This takes a few minutes on first run.
 
 To run and generate the output CSV:
 
 ```bash
-docker exec -it <container_name> iris session IRIS -U USER
-do ^RunScript
+docker exec -it gaia_challenge_one_line_sql_objectscript-iris-1 iris session IRIS -U USER
 ```
 
-The result is written to `data/out/variable_objects.csv`.
+Then at the IRIS prompt:
+
+```
+USER>do ^RunScript
+```
+
+The result is written to `data/out/variable_objects.csv` inside the container. To retrieve it:
+
+```bash
+docker cp gaia_challenge_one_line_sql_objectscript-iris-1:/home/irisowner/dev/data/out/variable_objects.csv .
+```
 
 ## Feedback
 

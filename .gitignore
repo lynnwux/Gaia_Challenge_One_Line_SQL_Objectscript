@@ -10,8 +10,9 @@ test_wqm.script
 dev.md
 PERFORMANCE_NOTES.md
 
-# Output data
-data/out/
+# Output data (keep directory, ignore generated files)
+data/out/*
+!data/out/.gitkeep
 data/temp/
 
 # Development artifacts (WQM experiment, superseded by daemon approach)
