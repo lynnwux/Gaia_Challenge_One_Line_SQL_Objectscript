@@ -11,7 +11,6 @@ The challenge: query table `g(id BIGINT, b TINYINT, f FLOAT)`.
 b=0 is BP (blue photometer), b=1 is RP (red photometer).
 Find every distinct star id where flux (f) varies by more than 100% in either band — meaning MAX(f) > 2*MIN(f) within that star+band group.
 Correct answer: exactly 57099 rows. Par is 88 chars.
-Reference solution: SELECT DISTINCT id FROM(SELECT id FROM g WHERE f>0 GROUP BY id,b HAVING MAX(f)>2*MIN(f))
 
 CRITICAL DATA FACT — know this cold:
 Some flux readings are invalid and stored as f=0 (detector noise, bad observations).

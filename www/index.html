@@ -261,7 +261,7 @@
         <textarea id="sql-input" placeholder="SELECT id FROM g WHERE ..." spellcheck="false"></textarea>
         <div class="editor-footer">
           <span class="char-count" id="char-count">0 chars</span>
-          <span style="color:var(--muted);font-size:0.8rem">· par 88</span>
+          <span style="color:var(--muted);font-size:0.8rem;cursor:help;border-bottom:1px dotted var(--muted)" title="Par 88 is the tightest known solution to this problem — Augusta National, not putt-putt. Match it and you've written world-class SQL. Beat it and you've set a new course record. Nobody has gone under par yet.">· par 88</span>
           <button class="btn-swing" id="btn-swing" onclick="swing()">⛳ Swing!</button>
           <button class="btn-reset" onclick="resetGame()">↺ New Game</button>
         </div>
@@ -381,7 +381,10 @@ async function swing() {
       res.innerHTML = `<strong>✅ Correct! ${data.count.toLocaleString()} rows</strong> · ${data.chars} chars · ${gap >= 0 ? '+'+gap : gap} vs par`;
     } else {
       res.className = 'result-box wrong';
-      res.innerHTML = `<strong>❌ Wrong: got ${(data.count||0).toLocaleString()} rows</strong> (need 57,099) · ${data.chars} chars`;
+      const wrongMsg = data.count === 57099
+        ? `<strong>❌ Wrong stars: got 57,099 rows but not the right ones</strong> · ${data.chars} chars`
+        : `<strong>❌ Wrong: got ${(data.count||0).toLocaleString()} rows</strong> (need 57,099) · ${data.chars} chars`;
+      res.innerHTML = wrongMsg;
     }
     if (!data.error && data.preview?.length) {
       const cols = Object.keys(data.preview[0]);

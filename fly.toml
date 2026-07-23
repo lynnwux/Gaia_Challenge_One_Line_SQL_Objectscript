@@ -1,11 +1,11 @@
 app = "gaia-sql-golden-tee"
 primary_region = "iad"
 
+[vm]
+  size = "performance-2x"
+
 [build]
   image = "lynnwu351/gaia-golden-tee:latest"
-
-[env]
-  ISC_CPF_MERGE_FILE = "/home/irisowner/dev/merge.cpf"
 
 # Set BEDROCK_BEARER_TOKEN as a secret:
 #   fly secrets set BEDROCK_BEARER_TOKEN=your_key_here
@@ -27,4 +27,10 @@ primary_region = "iad"
     type = "connections"
     hard_limit = 10
     soft_limit = 8
+
+  [[services.tcp_checks]]
+    grace_period = "120s"
+    interval = "30s"
+    timeout = "10s"
+    restart_limit = 0
 

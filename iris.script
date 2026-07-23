@@ -14,5 +14,13 @@
     set prop("AutheEnabled")=48
     do ##class(Security.Services).Modify("%Service_CallIn",.prop)
 
-    do $System.OBJ.Load("/home/irisowner/dev/src/%ZSTART.mac","ck")
+    ; Write %ZSTART routine so GAIA.Setup re-registers CSP apps on every cold start
+    set rtn = ##class(%Routine).%New("%ZSTART")
+    do rtn.WriteLine("%ZSTART")
+    do rtn.WriteLine(" new $namespace")
+    do rtn.WriteLine(" set $namespace=""USER""")
+    do rtn.WriteLine(" do ##class(GAIA.Setup).Run()")
+    do rtn.WriteLine(" quit")
+    do rtn.%Save()
+    do ##class(%Routine).Compile("%ZSTART","ck")
     halt
