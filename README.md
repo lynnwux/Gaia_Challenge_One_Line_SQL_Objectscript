@@ -4,6 +4,17 @@ InterSystems Employee Programming Challenge #1 — Code Golf submission.
 
 Identifies all Gaia DR3 epoch photometry sources whose BP or RP flux changed by more than 100% across the observation period. The entire computation is one executable line of ObjectScript — **516 characters**.
 
+## What "One Line" Means
+
+The challenge template defines two distinct phases:
+
+1. **Data loading** — `do ^LoadGaia` (provided by the template infrastructure). Reads the 20 raw `.csv.gz` files and populates an IRIS SQL table. This is ETL, not the calculation.
+2. **Calculation** — `do ^RunScript` (this submission). Identifies variable stars and writes the output CSV.
+
+`RunScript.mac` is exactly one executable line of ObjectScript. The `ROUTINE RunScript` header is a `.mac` label, not a statement. Everything after it — open stream, write header, run SQL, stream results, save — is a single unbroken line of 516 characters.
+
+The data loading step (`LoadGaia.mac` + `load_gaia.py`) follows the same pattern as the template's own `^LoadGaia` call: it is infrastructure that makes the data available, equivalent to `CREATE TABLE` + `LOAD DATA FROM FILE`. The variable star identification logic lives entirely in RunScript.
+
 ## How It Works
 
 The 20 Gaia DR3 epoch photometry files are pre-aggregated at load time into a single IRIS SQL table:
